@@ -1,6 +1,7 @@
 import { useEffect, useReducer } from "react";
 import { GlobalContext, globalReducer, initialState } from "./global-context";
 
+// 2. El Provider guarda el estado con useReducer y lo comparte con todos sus hijos.
 export default function GlobalProvider({ children }) {
   const [state, dispatch] = useReducer(globalReducer, initialState);
 
