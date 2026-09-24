@@ -7,6 +7,7 @@ import GlobalProvider from "./context/GlobalProvider.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
+    {/* El Provider envuelve toda la app para que todos lean el contexto */}
     <GlobalProvider>
       <div className="grid grid-cols-[auto_1fr] h-screen">
         <History />
