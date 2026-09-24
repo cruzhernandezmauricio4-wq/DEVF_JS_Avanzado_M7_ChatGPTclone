@@ -1,4 +1,3 @@
-import { useState } from "react";
 import useGlobal from "./useGlobal";
 
 const OLLAMA_URL = "http://localhost:11434/api/chat";
@@ -8,10 +7,10 @@ const MODEL = "deepseek-r1:1.5b";
 const removeThinking = (text) =>
   text.replace(/<think>[\s\S]*?(<\/think>|$)/g, "").trim();
 
+// El estado de carga y los errores viven en el contexto global,
+// así cualquier componente puede saber si la IA está respondiendo.
 export default function useOllama() {
   const { state, dispatch } = useGlobal();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
   const sendMessage = async (prompt) => {
     // Mandamos la conversación completa para que el modelo recuerde el contexto
@@ -25,8 +24,8 @@ export default function useOllama() {
 
     dispatch({ type: "@add_message", payload: { text: prompt, sender: "user" } });
     dispatch({ type: "@add_message", payload: { text: "", sender: "bot" } });
-    setLoading(true);
-    setError(null);
+    dispatch({ type: "@set_loading", payload: true });
+    dispatch({ type: "@set_error", payload: null });
 
     try {
       const res = await fetch(OLLAMA_URL, {
@@ -58,12 +57,15 @@ export default function useOllama() {
         }
       }
     } catch (err) {
-      setError("No se pudo conectar con Ollama. Revisa que esté abierto.");
+      dispatch({
+        type: "@set_error",
+        payload: "No se pudo conectar con Ollama. Revisa que esté abierto.",
+      });
       dispatch({ type: "@update_last_message", payload: `Error: ${err.message}` });
     } finally {
-      setLoading(false);
+      dispatch({ type: "@set_loading", payload: false });
     }
   };
 
-  return { sendMessage, loading, error };
+  return { sendMessage };
 }

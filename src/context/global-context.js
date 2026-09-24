@@ -1,5 +1,6 @@
 import { createContext } from "react";
 
+// 1. Creamos el contexto. Es el "canal" por el que viaja el estado global.
 export const GlobalContext = createContext(null);
 
 // Lee el historial guardado en el navegador
@@ -14,6 +15,8 @@ function loadHistory() {
 export const initialState = {
   currentChat: [], // mensajes del chat abierto
   history: loadHistory(), // chats guardados: { title, content }
+  loading: false, // true mientras la IA está respondiendo
+  error: null, // mensaje de error para mostrar al usuario
 };
 
 // El reducer nunca modifica el estado: siempre devuelve uno nuevo
@@ -23,9 +26,16 @@ export function globalReducer(state, action) {
       return { ...state, currentChat: [...state.currentChat, action.payload] };
     }
     case "@update_last_message": {
+      if (!state.currentChat.length) return state;
       const chat = [...state.currentChat];
       chat[chat.length - 1] = { ...chat[chat.length - 1], text: action.payload };
       return { ...state, currentChat: chat };
+    }
+    case "@set_loading": {
+      return { ...state, loading: action.payload };
+    }
+    case "@set_error": {
+      return { ...state, error: action.payload };
     }
     case "@save_history": {
       if (!state.currentChat.length) return state;
@@ -33,7 +43,7 @@ export function globalReducer(state, action) {
         title: state.currentChat[0].text, // el primer mensaje es el título
         content: state.currentChat,
       };
-      return { history: [newChat, ...state.history], currentChat: [] };
+      return { ...state, history: [newChat, ...state.history], currentChat: [] };
     }
     case "@open_chat": {
       // Sacamos el chat elegido del historial para no duplicarlo al guardarlo otra vez
@@ -43,7 +53,7 @@ export function globalReducer(state, action) {
       const current = state.currentChat.length
         ? [{ title: state.currentChat[0].text, content: state.currentChat }]
         : [];
-      return { history: [...current, ...rest], currentChat: chosen.content };
+      return { ...state, history: [...current, ...rest], currentChat: chosen.content };
     }
     default:
       throw new Error(`Acción no reconocida: ${action.type}`);
