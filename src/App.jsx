@@ -1,8 +1,9 @@
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { SendHorizontal } from "lucide-react";
+import useGlobal from "./hooks/useGlobal";
+import useOllama from "./hooks/useOllama";
 
 // Reglas de validación del mensaje
 const messageSchema = z.object({
@@ -14,7 +15,8 @@ const messageSchema = z.object({
 });
 
 export default function App() {
-  const [messages, setMessages] = useState([]);
+  const { state } = useGlobal();
+  const { sendMessage, loading, error } = useOllama();
 
   const {
     register,
@@ -23,33 +25,24 @@ export default function App() {
     formState: { errors },
   } = useForm({ resolver: zodResolver(messageSchema) });
 
-  // Solo se ejecuta si la validación pasa
   const onSubmit = (data) => {
-    setMessages((prev) => [...prev, { text: data.text, sender: "user" }]);
+    sendMessage(data.text);
     reset();
-
-    // Respuesta simulada; en la parte de Ollama se cambia por la IA real
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        { text: "Respuesta generada...", sender: "bot" },
-      ]);
-    }, 1000);
   };
 
   return (
     <div className="flex flex-col h-screen w-full bg-gray-900 text-white">
       <div className="flex-1 overflow-y-auto p-4 space-y-2 flex flex-col">
-        {messages.map((msg, index) => (
+        {state.currentChat.map((msg, index) => (
           <div
             key={index}
-            className={`max-w-md px-4 py-2 rounded-lg ${
+            className={`max-w-2xl px-4 py-2 rounded-lg whitespace-pre-wrap ${
               msg.sender === "user"
                 ? "bg-blue-600 self-end"
                 : "bg-gray-700 self-start"
             }`}
           >
-            {msg.text}
+            {msg.text || <span className="animate-pulse">Pensando...</span>}
           </div>
         ))}
       </div>
@@ -66,15 +59,19 @@ export default function App() {
             className="flex-1 p-2 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:border-blue-500"
             {...register("text")}
           />
-          <button type="submit" className="ml-2 p-2 bg-blue-600 hover:bg-blue-500 rounded-lg">
+          <button
+            type="submit"
+            disabled={loading}
+            className="ml-2 p-2 bg-blue-600 hover:bg-blue-500 rounded-lg disabled:opacity-50"
+          >
             <SendHorizontal size={20} />
           </button>
         </div>
         {errors.text && (
           <span className="text-red-400 text-sm">{errors.text.message}</span>
         )}
+        {error && <span className="text-red-400 text-sm">{error}</span>}
       </form>
     </div>
   );
 }
-
